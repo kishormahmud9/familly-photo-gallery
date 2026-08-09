@@ -40,7 +40,7 @@ export function NavigationHeader() {
           </div>
           <div>
             <h1 className="font-serif font-bold text-lg md:text-xl tracking-tight text-white group-hover:text-amber-300 transition-colors">
-              My Archive
+              Moments
             </h1>
             <p className="text-[10px] font-mono tracking-widest text-amber-400 uppercase">
               Family Photo Gallery

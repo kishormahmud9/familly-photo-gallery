@@ -9,6 +9,7 @@ import { PhotoService } from '@/services/photoService';
 import { Photo, Album, Person } from '@/types';
 import { GalleryRenderer } from '@/components/gallery/GalleryRenderer';
 import { Button } from '@/components/ui/Button';
+import heroBg from '/hero/hero-bg.jpg';
 
 export default function HomePage() {
   const [featuredPhotos, setFeaturedPhotos] = useState<Photo[]>([]);
@@ -30,21 +31,18 @@ export default function HomePage() {
     });
   }, []);
 
-  const heroPhoto = featuredPhotos[0];
-
   return (
     <div className="space-y-24 pb-12">
       {/* 1. Cinematic Hero Section */}
-      {heroPhoto && (
-        <section className="relative w-full h-[80vh] min-h-[550px] max-h-[800px] rounded-3xl overflow-hidden border border-white/10 group shadow-2xl">
-          <Image
-            src={heroPhoto.url}
-            alt={heroPhoto.title}
-            fill
-            priority
-            sizes="(max-width: 1200px) 100vw, 1400px"
-            className="object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
-          />
+      <section className="relative w-full h-[80vh] min-h-[550px] max-h-[800px] rounded-3xl overflow-hidden border border-white/10 group shadow-2xl">
+        <Image
+          src="/hero/hero-bg.jpg"
+          alt="Family Archive Hero"
+          fill
+          priority
+          sizes="(max-width: 1200px) 100vw, 1400px"
+          className="object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+        />
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent flex flex-col justify-end p-8 md:p-14">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -62,14 +60,14 @@ export default function HomePage() {
                 Moments we remember.
               </h1>
               <p className="text-zinc-300 text-sm md:text-base font-sans font-light leading-relaxed max-w-xl">
-                {heroPhoto.description || 'A timeless collection of family stories, milestones, and memories spanning generations.'}
+                {'A timeless collection of family stories, milestones, and memories spanning generations.'}
               </p>
-              
+
               {/* Hero Archival Metadata */}
               <div className="flex items-center gap-4 text-xs font-sans text-zinc-400 pt-1">
-                <span>{heroPhoto.location?.name || 'Tuscany, Italy'}</span>
+                <span>Bangladesh</span>
                 <span>•</span>
-                <span>{heroPhoto.year}</span>
+                <span>2024</span>
                 <span>•</span>
                 <span>{featuredPhotos.length} curated highlights</span>
               </div>
@@ -90,7 +88,7 @@ export default function HomePage() {
             </motion.div>
           </div>
         </section>
-      )}
+
 
       {/* 2. Editorial Quote Statement */}
       <section className="text-center max-w-3xl mx-auto space-y-3 py-6">
