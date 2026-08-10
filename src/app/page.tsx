@@ -9,7 +9,7 @@ import { PhotoService } from '@/services/photoService';
 import { Photo, Album, Person } from '@/types';
 import { GalleryRenderer } from '@/components/gallery/GalleryRenderer';
 import { Button } from '@/components/ui/Button';
-import heroBg from '/hero/hero-bg.jpg';
+const heroBg = '/hero/hero-bg.jpg';
 
 export default function HomePage() {
   const [featuredPhotos, setFeaturedPhotos] = useState<Photo[]>([]);
