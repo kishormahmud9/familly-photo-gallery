@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db/prisma";
-import { Album } from "@prisma/client";
+import { Album } from "@/generated/prisma/client";
 import { CreateAlbumInput, UpdateAlbumInput } from "@/lib/validators/album";
 
 export interface AlbumWithPhotoCount extends Album {

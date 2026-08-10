@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db/prisma";
-import { Photo, Prisma } from "@prisma/client";
+import { Photo, Prisma } from "@/generated/prisma/client";
 import { PhotoQueryInput, UpdatePhotoInput } from "@/lib/validators/photo";
 
 export interface PaginatedPhotos {

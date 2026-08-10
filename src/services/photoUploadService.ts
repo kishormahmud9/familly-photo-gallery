@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db/prisma";
 import { CloudinaryStorage, CloudinaryUploadResult } from "@/lib/storage/cloudinary";
 import { NotFoundError, ValidationError } from "@/lib/errors/app-error";
-import { Photo } from "@prisma/client";
+import { Photo } from "@/generated/prisma/client";
 
 export interface FileToUpload {
   buffer: Buffer;

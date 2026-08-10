@@ -1,9 +1,10 @@
 import "server-only";
 import { PhotoRepository, PaginatedPhotos } from "@/repositories/photoRepository";
+import { AlbumRepository } from "@/repositories/albumRepository";
 import { CloudinaryStorage } from "@/lib/storage/cloudinary";
 import { NotFoundError, ValidationError } from "@/lib/errors/app-error";
 import { PhotoQueryInput, UpdatePhotoInput, BulkDeletePhotosInput, BulkMovePhotosInput } from "@/lib/validators/photo";
-import { Photo } from "@prisma/client";
+import { Photo } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 export interface BulkOperationResult {
