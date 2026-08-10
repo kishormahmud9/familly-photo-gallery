@@ -9,6 +9,42 @@ export class PhotoService {
    * Get all photos with optional filtering & sorting
    */
   static async getPhotos(filters?: GalleryFilterOptions): Promise<Photo[]> {
+    try {
+      const params = new URLSearchParams();
+      if (filters?.albumId) params.set('albumId', filters.albumId);
+      if (filters?.searchQuery) params.set('search', filters.searchQuery);
+
+      const queryString = params.toString();
+      const url = `/api/photos${queryString ? `?${queryString}` : ''}`;
+      const res = await fetch(url, { cache: 'no-store' });
+
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data?.items && Array.isArray(body.data.items) && body.data.items.length > 0) {
+          return body.data.items.map((p: any) => ({
+            id: p.id,
+            url: p.imageUrl,
+            thumbnailUrl: p.thumbUrl || p.imageUrl,
+            title: p.title || p.filename,
+            description: p.description || '',
+            date: new Date(p.createdAt).toISOString().split('T')[0],
+            year: new Date(p.createdAt).getFullYear(),
+            peopleIds: [],
+            albumId: p.albumId,
+            tags: ['family'],
+            width: p.width || 1200,
+            height: p.height || 800,
+            aspectRatio: p.width && p.height ? p.width / p.height : 1.5,
+            orientation: (p.width && p.height && p.height > p.width) ? 'portrait' : 'landscape',
+            favorite: false,
+            createdAt: p.createdAt,
+          }));
+        }
+      }
+    } catch (e) {
+      // Fallback to mock data if API unavailable
+    }
+
     await delay();
     let result = [...MOCK_PHOTOS];
 
@@ -68,6 +104,35 @@ export class PhotoService {
   }
 
   static async getPhotoById(id: string): Promise<Photo | null> {
+    try {
+      const res = await fetch(`/api/photos/${id}`, { cache: 'no-store' });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          const p = body.data;
+          return {
+            id: p.id,
+            url: p.imageUrl,
+            thumbnailUrl: p.thumbUrl || p.imageUrl,
+            title: p.title || p.filename,
+            description: p.description || '',
+            date: new Date(p.createdAt).toISOString().split('T')[0],
+            year: new Date(p.createdAt).getFullYear(),
+            peopleIds: [],
+            albumId: p.albumId,
+            tags: ['family'],
+            width: p.width || 1200,
+            height: p.height || 800,
+            aspectRatio: p.width && p.height ? p.width / p.height : 1.5,
+            orientation: (p.width && p.height && p.height > p.width) ? 'portrait' : 'landscape',
+            favorite: false,
+            createdAt: p.createdAt,
+          };
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
     await delay();
     return MOCK_PHOTOS.find((p: Photo) => p.id === id) || null;
   }

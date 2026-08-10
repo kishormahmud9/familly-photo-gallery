@@ -149,6 +149,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## ☁️ Photo Upload & Storage APIs
 
 - `POST /api/photos/upload`: Multipart image upload endpoint (Admin Only). Uploads validated binary images to Cloudinary (`family-photo-gallery/{env}/albums/{albumId}/photos`) and persists photo metadata & transformation URLs to Neon PostgreSQL.
+- `GET /api/photos`: Paginated, searchable, album-filterable photo list endpoint (Public).
+- `GET /api/photos/:id`: Retrieve single photo details (Public).
+- `PUT /api/photos/:id`: Edit photo metadata or relocate to another album (Admin Only).
+- `DELETE /api/photos/:id`: Single photo deletion endpoint. Removes asset from Cloudinary and deletes database record (Admin Only).
+- `POST /api/photos/bulk-delete`: Bulk photo deletion endpoint (Admin Only).
+- `POST /api/photos/bulk-move`: Bulk photo album reassignment endpoint (Admin Only).
 
 ---
 
@@ -159,4 +165,5 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - [x] **Phase 3**: Admin Authentication & Security
 - [x] **Phase 4**: Album Management & Project Git Hygiene
 - [x] **Phase 5**: Photo Upload & Storage Integration (Cloudinary)
-- [ ] **Phase 6**: Public & Admin Frontend Integration (Next Phase)
+- [x] **Phase 6**: Photo Management, Cloudinary Asset Lifecycle & Verification
+- [ ] **Phase 7**: Public & Admin Frontend Integration / Final Polish (Next Phase)
