@@ -7,6 +7,7 @@ import { PhotoService } from '@/services/photoService';
 import { Photo, Album, Person } from '@/types';
 import { Image as ImageIcon, FolderOpen, Users, Upload, HardDrive, ArrowUpRight } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/Feedback';
 
 export default function AdminOverviewPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -25,9 +26,9 @@ export default function AdminOverviewPage() {
       .catch(() => {});
 
     Promise.all([
-      PhotoService.getPhotos(),
-      PhotoService.getAlbums(),
-      PhotoService.getPeople(),
+      PhotoService.getAdminPhotos(),
+      PhotoService.getAdminAlbums(),
+      PhotoService.getAdminPeople(),
     ]).then(([p, a, pe]) => {
       setPhotos(p);
       setAlbums(a);
@@ -88,26 +89,32 @@ export default function AdminOverviewPage() {
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-zinc-900/60 overflow-hidden">
-          <div className="divide-y divide-white/5">
-            {photos.slice(0, 4).map((photo) => (
-              <div key={photo.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
-                    <Image src={photo.thumbnailUrl} alt={photo.title} fill className="object-cover" />
+          {photos.length === 0 ? (
+            <div className="p-8 text-center text-xs font-sans text-zinc-500">
+              No photographs uploaded yet. Upload images via the Upload Center.
+            </div>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {photos.slice(0, 4).map((photo) => (
+                <div key={photo.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
+                      <Image src={photo.thumbnailUrl} alt={photo.title} fill className="object-cover" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-white">{photo.title}</h4>
+                      <p className="text-xs text-zinc-400 font-mono">Uploaded Photograph</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-white">{photo.title}</h4>
-                    <p className="text-xs text-zinc-400 font-mono">{photo.albumName || 'Unassigned Album'}</p>
-                  </div>
-                </div>
 
-                <div className="text-right text-xs font-mono text-zinc-400">
-                  <p>{formatDate(photo.date)}</p>
-                  <span className="text-[10px] text-amber-400">{photo.orientation}</span>
+                  <div className="text-right text-xs font-mono text-zinc-400">
+                    <p>{formatDate(photo.date)}</p>
+                    <span className="text-[10px] text-amber-400">{photo.orientation}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

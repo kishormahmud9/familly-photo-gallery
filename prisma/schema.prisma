@@ -28,13 +28,14 @@ model Admin {
 }
 
 model Album {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  coverUrl    String?
-  eventDate   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  title              String
+  description        String?
+  coverUrl           String?
+  cloudinaryPublicId String?
+  eventDate          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   photos Photo[]
 
@@ -62,3 +63,20 @@ model Photo {
   @@index([createdAt])
   @@map("photos")
 }
+
+model Person {
+  id                 String   @id @default(cuid())
+  name               String
+  role               String?
+  bio                String?
+  birthYear          Int?
+  avatarUrl          String?
+  cloudinaryPublicId String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([name])
+  @@map("people")
+}
+
+

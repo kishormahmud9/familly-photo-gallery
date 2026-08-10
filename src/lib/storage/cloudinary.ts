@@ -32,16 +32,18 @@ export class CloudinaryStorage {
     );
   }
 
-  static async uploadBuffer(
+  static async uploadMedia(
     buffer: Buffer,
-    albumId: string
+    folderType: "covers" | "avatars" | "photos",
+    subId?: string
   ): Promise<CloudinaryUploadResult> {
     if (!this.isConfigured()) {
       throw new Error("Cloudinary credentials are not configured in environment variables");
     }
 
     const envFolder = process.env.NODE_ENV === "production" ? "production" : "development";
-    const folderPath = `family-photo-gallery/${envFolder}/albums/${albumId}/photos`;
+    const subFolder = subId ? `/${subId}` : "";
+    const folderPath = `family-photo-gallery/${envFolder}/${folderType}${subFolder}`;
 
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
@@ -54,7 +56,6 @@ export class CloudinaryStorage {
             return reject(error || new Error("Cloudinary upload failed with empty response"));
           }
 
-          // Generate thumbnail transformation URL (c_fill, w_400, h_400, g_auto)
           const thumbUrl = cloudinary.url(result.public_id, {
             transformation: [
               { width: 400, height: 400, crop: "fill", gravity: "auto" },
@@ -76,6 +77,13 @@ export class CloudinaryStorage {
 
       uploadStream.end(buffer);
     });
+  }
+
+  static async uploadBuffer(
+    buffer: Buffer,
+    albumId: string
+  ): Promise<CloudinaryUploadResult> {
+    return this.uploadMedia(buffer, "photos", albumId);
   }
 
   static async deleteImage(publicId: string): Promise<boolean> {

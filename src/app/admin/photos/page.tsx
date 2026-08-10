@@ -13,23 +13,33 @@ import { MediaToolbar } from '@/components/admin/media/MediaToolbar';
 import { MediaSelectionToolbar } from '@/components/admin/media/MediaSelectionToolbar';
 import { MediaDetailDrawer } from '@/components/admin/media/MediaDetailDrawer';
 import { useLightbox } from '@/context/LightboxContext';
-import { Upload, Heart, Check, Eye, Info, Trash2, Calendar, MapPin } from 'lucide-react';
+import { Upload, Check, Eye, Info, Trash2, Loader2 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 export default function AdminPhotosPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title'>('date-desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
   const [inspectPhoto, setInspectPhoto] = useState<Photo | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const { openLightbox } = useLightbox();
 
+  const fetchPhotos = async () => {
+    setIsLoading(true);
+    try {
+      const data = await PhotoService.getAdminPhotos({ searchQuery: searchQuery || undefined, sortBy });
+      setPhotos(data);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    PhotoService.getPhotos({ searchQuery: searchQuery || undefined, sortBy }).then(setPhotos);
+    fetchPhotos();
   }, [searchQuery, sortBy]);
 
   const allTags = Array.from(new Set(photos.flatMap((p) => p.tags)));
@@ -50,22 +60,49 @@ export default function AdminPhotosPage() {
     }
   };
 
-  // Simulated local delete handler
-  const handleDeletePhoto = (id: string) => {
-    setPhotos((prev) => prev.filter((p) => p.id !== id));
-    setSelectedPhotoIds((prev) => prev.filter((item) => item !== id));
-    setDeleteConfirmId(null);
+  // Real API Delete handler
+  const handleDeletePhoto = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this photo? This will permanently delete the image from Cloudinary and database.')) return;
+
+    try {
+      const res = await fetch(`/api/photos/${id}`, {
+        method: 'DELETE',
+      });
+      const body = await res.json();
+      if (!res.ok || !body.success) {
+        alert(body.message || 'Failed to delete photo.');
+        return;
+      }
+
+      setSelectedPhotoIds((prev) => prev.filter((item) => item !== id));
+      await fetchPhotos();
+    } catch {
+      alert('Network error while deleting photo.');
+    }
   };
 
-  const handleBulkFavorite = () => {
-    setPhotos((prev) =>
-      prev.map((p) => (selectedPhotoIds.includes(p.id) ? { ...p, favorite: true } : p))
-    );
-  };
+  const handleBulkDelete = async () => {
+    if (selectedPhotoIds.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedPhotoIds.length} selected photos permanently?`)) return;
 
-  const handleBulkDelete = () => {
-    setPhotos((prev) => prev.filter((p) => !selectedPhotoIds.includes(p.id)));
-    setSelectedPhotoIds([]);
+    try {
+      const res = await fetch('/api/photos/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedPhotoIds }),
+      });
+      const body = await res.json();
+
+      if (!res.ok || !body.success) {
+        alert(body.message || 'Bulk delete failed.');
+        return;
+      }
+
+      setSelectedPhotoIds([]);
+      await fetchPhotos();
+    } catch {
+      alert('Network error during bulk delete.');
+    }
   };
 
   return (
@@ -87,38 +124,40 @@ export default function AdminPhotosPage() {
       {/* Search & Tag Filter Pills */}
       <div className="space-y-4">
         <SearchInput
-          placeholder="Search titles, descriptions, locations, or tags..."
+          placeholder="Search titles, descriptions, or filenames..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onClear={() => setSearchQuery('')}
         />
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-          <button
-            onClick={() => setSelectedTag('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-sans transition-all cursor-pointer ${
-              selectedTag === 'all'
-                ? 'bg-amber-400 text-zinc-950 font-bold'
-                : 'bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white'
-            }`}
-          >
-            All Tags
-          </button>
-          {allTags.map((tag) => (
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
             <button
-              key={tag}
-              onClick={() => setSelectedTag(tag)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-sans whitespace-nowrap transition-all cursor-pointer ${
-                selectedTag === tag
+              onClick={() => setSelectedTag('all')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-sans transition-all cursor-pointer ${
+                selectedTag === 'all'
                   ? 'bg-amber-400 text-zinc-950 font-bold'
                   : 'bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white'
               }`}
             >
-              #{tag}
+              All Tags
             </button>
-          ))}
-        </div>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(tag)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-sans whitespace-nowrap transition-all cursor-pointer ${
+                  selectedTag === tag
+                    ? 'bg-amber-400 text-zinc-950 font-bold'
+                    : 'bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white'
+                }`}
+              >
+                #{tag}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Media Toolbar Controls */}
@@ -134,11 +173,35 @@ export default function AdminPhotosPage() {
         onOpenFiltersMobile={() => {}}
       />
 
-      {/* Empty State Check */}
-      {filteredPhotos.length === 0 ? (
+      {/* Media Selection Floating Action Bar */}
+      {selectedPhotoIds.length > 0 && (
+        <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-between">
+          <span className="text-xs font-mono text-amber-300">
+            {selectedPhotoIds.length} photo(s) selected
+          </span>
+          <Button variant="danger" size="sm" icon={<Trash2 className="w-3.5 h-3.5" />} onClick={handleBulkDelete}>
+            Delete Selected
+          </Button>
+        </div>
+      )}
+
+      {/* Loading / Empty / Content */}
+      {isLoading ? (
+        <div className="py-20 text-center text-zinc-500 font-sans text-xs flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+          Loading photo archive from database...
+        </div>
+      ) : filteredPhotos.length === 0 ? (
         <EmptyState
-          title="No photographs match your query"
-          description="Try adjusting your search criteria or tag filters to locate photos."
+          title="No Photographs Found"
+          description="Your database currently has no uploaded family photographs."
+          action={
+            <Link href="/admin/upload">
+              <Button variant="primary" size="sm" icon={<Upload className="w-4 h-4" />}>
+                Upload First Photo
+              </Button>
+            </Link>
+          }
         />
       ) : viewMode === 'grid' ? (
         /* GRID VIEW */
@@ -165,7 +228,7 @@ export default function AdminPhotosPage() {
                 {/* Thumbnail */}
                 <div className="relative aspect-square w-full">
                   <Image src={photo.thumbnailUrl} alt={photo.title} fill className="object-cover" />
-                  
+
                   {/* Hover Quick Actions */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity p-3 flex items-center justify-center gap-2">
                     <button
@@ -183,7 +246,7 @@ export default function AdminPhotosPage() {
                       <Info className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => setDeleteConfirmId(photo.id)}
+                      onClick={() => handleDeletePhoto(photo.id)}
                       className="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 transition-colors cursor-pointer"
                       title="Delete Photo"
                     >
@@ -203,99 +266,41 @@ export default function AdminPhotosPage() {
         </div>
       ) : (
         /* LIST VIEW */
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 overflow-hidden divide-y divide-white/5 text-xs font-sans">
-          {filteredPhotos.map((photo) => {
-            const isSelected = selectedPhotoIds.includes(photo.id);
-            return (
-              <div
-                key={photo.id}
-                className={`p-4 flex items-center justify-between gap-4 hover:bg-white/5 transition-colors ${
-                  isSelected ? 'bg-amber-400/5' : ''
-                }`}
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <button
-                    onClick={() => handleToggleSelect(photo.id)}
-                    className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
-                      isSelected ? 'bg-amber-400 border-amber-400 text-zinc-950' : 'border-white/30 text-transparent'
-                    }`}
-                  >
-                    <Check className="w-3 h-3 stroke-[3]" />
-                  </button>
-
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-800 shrink-0">
-                    <Image src={photo.thumbnailUrl} alt={photo.title} fill className="object-cover" />
-                  </div>
-
-                  <div className="min-w-0">
-                    <h4 className="font-semibold text-white truncate">{photo.title}</h4>
-                    <p className="text-zinc-400 font-mono text-[11px]">{photo.albumName || 'Unassigned Album'}</p>
-                  </div>
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 overflow-hidden divide-y divide-white/5 font-sans text-xs">
+          {filteredPhotos.map((photo) => (
+            <div key={photo.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-white/10">
+                  <Image src={photo.thumbnailUrl} alt={photo.title} fill className="object-cover" />
                 </div>
-
-                <div className="hidden sm:flex items-center gap-6 text-zinc-400 text-xs font-mono">
-                  <span>{formatDate(photo.date)}</span>
-                  {photo.location && <span>{photo.location.name}</span>}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openLightbox(photo, filteredPhotos)}
-                    className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
-                    title="Preview"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setInspectPhoto(photo)}
-                    className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10"
-                    title="Metadata"
-                  >
-                    <Info className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirmId(photo.id)}
-                    className="p-2 rounded-lg text-rose-400 hover:bg-rose-500/20"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div>
+                  <h4 className="text-sm font-semibold text-white">{photo.title}</h4>
+                  <span className="text-[11px] font-mono text-zinc-400">{formatDate(photo.date)}</span>
                 </div>
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openLightbox(photo, filteredPhotos)}
+                  className="p-2 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeletePhoto(photo.id)}
+                  className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Contextual Bulk Action Toolbar */}
-      <MediaSelectionToolbar
-        selectedCount={selectedPhotoIds.length}
-        onClearSelection={() => setSelectedPhotoIds([])}
-        onBulkFavorite={handleBulkFavorite}
-        onBulkDelete={handleBulkDelete}
-      />
-
-      {/* Metadata Inspection Drawer */}
-      <MediaDetailDrawer photo={inspectPhoto} onClose={() => setInspectPhoto(null)} />
-
-      {/* Simulated Delete Confirmation Dialog */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm p-6 rounded-3xl bg-zinc-900 border border-white/10 space-y-4 text-center">
-            <h3 className="text-lg font-serif font-bold text-white">Delete Photograph?</h3>
-            <p className="text-xs font-sans text-zinc-400">
-              This photo will be removed from the local mock archive collection.
-            </p>
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setDeleteConfirmId(null)}>
-                Cancel
-              </Button>
-              <Button variant="danger" size="sm" onClick={() => handleDeletePhoto(deleteConfirmId)}>
-                Delete Photo
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Metadata Detail Drawer */}
+      {inspectPhoto && (
+        <MediaDetailDrawer photo={inspectPhoto} onClose={() => setInspectPhoto(null)} />
       )}
     </div>
   );

@@ -12,13 +12,8 @@ export const createAlbumSchema = z.object({
     .max(1000, "Description cannot exceed 1000 characters")
     .optional()
     .nullable(),
-  coverUrl: z
-    .string()
-    .trim()
-    .url("Cover URL must be a valid URL")
-    .optional()
-    .nullable()
-    .or(z.literal("")),
+  coverUrl: z.string().url("Cover URL must be a valid URL").optional().nullable().or(z.literal("")),
+  cloudinaryPublicId: z.string().optional().nullable(),
   eventDate: z
     .string()
     .optional()

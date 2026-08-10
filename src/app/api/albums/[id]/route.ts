@@ -29,7 +29,12 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
     const { id } = await context.params;
     const body = await validateRequestBody(req, updateAlbumSchema);
-    const updatedAlbum = await AlbumService.updateAlbum(id, body);
+
+    // Fetch existing album to get old cloudinaryPublicId for safe image replacement
+    const existing = await AlbumService.getAlbumById(id);
+    const oldPublicId = existing.cloudinaryPublicId;
+
+    const updatedAlbum = await AlbumService.updateAlbum(id, body, oldPublicId);
     return successResponse(updatedAlbum, "Album updated successfully");
   } catch (error) {
     return handleApiError(error);

@@ -156,6 +156,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `POST /api/photos/bulk-delete`: Bulk photo deletion endpoint (Admin Only).
 - `POST /api/photos/bulk-move`: Bulk photo album reassignment endpoint (Admin Only).
 
+## 👥 Family Member / People APIs
+
+- `GET /api/people`: Retrieve all family member profiles (Public).
+- `GET /api/people/:id`: Retrieve single family member profile by ID (Public).
+- `POST /api/people`: Create a new family member profile (Admin Only).
+- `PUT /api/people/:id`: Edit family member profile (Admin Only).
+- `DELETE /api/people/:id`: Delete family member profile (Admin Only).
+
+---
+
+## 🛡️ Admin vs. Public Data Strategy
+
+- **Admin Management Pages**: Strictly render live data from Neon PostgreSQL. When a database table is empty (`0` items), Admin UI renders a clean empty state. **Admin pages never fall back to mock data.**
+- **Public Presentation Pages**: Load live database data first. If the database is empty, public presentation pages fall back to demo content to maintain visual aesthetics.
+
 ---
 
 ## 📌 Phase Status
@@ -166,4 +181,5 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - [x] **Phase 4**: Album Management & Project Git Hygiene
 - [x] **Phase 5**: Photo Upload & Storage Integration (Cloudinary)
 - [x] **Phase 6**: Photo Management, Cloudinary Asset Lifecycle & Verification
-- [ ] **Phase 7**: Public & Admin Frontend Integration / Final Polish (Next Phase)
+- [x] **Phase 7**: End-to-End Frontend ↔ Backend Integration & Real Data Persistence
+
