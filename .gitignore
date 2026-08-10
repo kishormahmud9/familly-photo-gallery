@@ -16,13 +16,7 @@
 # next.js
 /.next/
 /out/
-
-# production
 /build
-
-# misc
-.DS_Store
-*.pem
 
 # debug
 npm-debug.log*
@@ -30,14 +24,25 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files
+.env
+.env*.local
+!.env.example
 
-# vercel
+# vercel & ide
 .vercel
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.pem
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-/src/generated/prisma

@@ -136,11 +136,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## 📁 Album APIs
+
+- `GET /api/albums`: Retrieve all albums with photo count (Public).
+- `GET /api/albums/:id`: Retrieve single album details by ID with photo count (Public).
+- `POST /api/albums`: Create a new album (Admin Only).
+- `PUT /api/albums/:id`: Edit album metadata (Admin Only).
+- `DELETE /api/albums/:id`: Delete empty album. Returns `409 Conflict` if album contains photos (Admin Only).
+
+---
+
 ## 📌 Phase Status
 
 - [x] **Phase 1**: Backend Foundation & Shared Architecture
 - [x] **Phase 2**: Database Architecture, Prisma Schema & Neon PostgreSQL
 - [x] **Phase 3**: Admin Authentication & Security
-- [ ] **Phase 4**: Photo Upload & Storage Integration (Next Phase)
-- [ ] **Phase 5**: Album & Photo Management APIs
+- [x] **Phase 4**: Album Management & Project Git Hygiene
+- [ ] **Phase 5**: Photo Upload & Storage Integration (Next Phase)
 - [ ] **Phase 6**: Public & Admin Frontend Integration

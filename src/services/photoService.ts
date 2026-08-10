@@ -99,11 +99,50 @@ export class PhotoService {
    * Album Data Access
    */
   static async getAlbums(): Promise<Album[]> {
+    try {
+      const res = await fetch('/api/albums', { cache: 'no-store' });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && Array.isArray(body.data) && body.data.length > 0) {
+          return body.data.map((a: { id: string; title: string; description: string | null; coverUrl: string | null; photoCount: number; eventDate: string | null; createdAt: string }) => ({
+            id: a.id,
+            title: a.title,
+            description: a.description || '',
+            coverPhotoUrl: a.coverUrl || '/albums/summer-vacation.jpg',
+            photoCount: a.photoCount,
+            dateRange: a.eventDate ? new Date(a.eventDate).getFullYear().toString() : '2025',
+            createdAt: a.createdAt || new Date().toISOString(),
+          }));
+        }
+      }
+    } catch (e) {
+      // Fallback to mock data if API is unreachable or empty
+    }
     await delay();
     return MOCK_ALBUMS;
   }
 
   static async getAlbumById(id: string): Promise<Album | null> {
+    try {
+      const res = await fetch(`/api/albums/${id}`, { cache: 'no-store' });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.success && body.data) {
+          const a = body.data;
+          return {
+            id: a.id,
+            title: a.title,
+            description: a.description || '',
+            coverPhotoUrl: a.coverUrl || '/albums/summer-vacation.jpg',
+            photoCount: a.photoCount,
+            dateRange: a.eventDate ? new Date(a.eventDate).getFullYear().toString() : '2025',
+            createdAt: a.createdAt || new Date().toISOString(),
+          };
+        }
+      }
+    } catch (e) {
+      // Fallback to mock data
+    }
     await delay();
     return MOCK_ALBUMS.find((a: Album) => a.id === id) || null;
   }
