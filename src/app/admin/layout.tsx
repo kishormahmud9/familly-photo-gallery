@@ -9,8 +9,6 @@ import {
   Upload,
   FolderOpen,
   Users,
-  Calendar,
-  Settings,
   ArrowLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -24,8 +22,36 @@ const ADMIN_LINKS = [
   { href: '/admin/people', label: 'People', icon: <Users className="w-4 h-4" /> },
 ];
 
+function LogoutButton() {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      window.location.href = '/admin/login';
+    }
+  };
+
+  return (
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-2 text-xs font-mono text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+      aria-label="Sign out of admin dashboard"
+    >
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      Sign Out
+    </button>
+  );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  // Login page renders without sidebar — it has its own full-page layout
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
 
   // Generate dynamic breadcrumb segments
   const pathSegments = pathname.split('/').filter(Boolean);
@@ -62,13 +88,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="pt-4 border-t border-white/10 px-2">
+        <div className="pt-4 border-t border-white/10 px-2 space-y-2">
           <Link
             href="/"
             className="flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-amber-300 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Archive
           </Link>
+          <LogoutButton />
         </div>
       </aside>
 

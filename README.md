@@ -84,7 +84,7 @@ Neon PostgreSQL Database
    ```
 3. (Optional) Set seed credentials for initial admin setup:
    ```env
-   ADMIN_EMAIL="admin@familyphoto.local"
+   ADMIN_EMAIL="mahmudkishor9@gmail.com"
    ADMIN_PASSWORD="your-secure-password"
    ```
 
@@ -106,7 +106,7 @@ To create or verify the initial admin account (using credentials from `.env`):
 ```bash
 npx prisma db seed
 ```
-*Note: The seed script uses `bcryptjs` password hashing and is completely idempotent (safe to run multiple times without duplicating records).*
+*Note: The seed script uses `Argon2id` password hashing and is completely idempotent (safe to run multiple times without duplicating records).*
 
 ### 4. Running the Application
 
