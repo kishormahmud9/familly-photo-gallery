@@ -17,6 +17,7 @@ export interface UploadSuccessItem {
   imageUrl: string;
   thumbUrl: string | null;
   albumId: string;
+  taggedPeople: string[];
 }
 
 export interface UploadFailedItem {
@@ -30,48 +31,42 @@ export interface MultiUploadResult {
 }
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit per photo
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES_PER_BATCH = 20;
 
 export class PhotoUploadService {
   static async uploadPhotosForAlbum(
     albumId: string,
-    files: FileToUpload[]
+    files: FileToUpload[],
+    personIds: string[] = []
   ): Promise<MultiUploadResult> {
-    // 1. Verify Album existence
     const album = await prisma.album.findUnique({ where: { id: albumId } });
-    if (!album) {
-      throw new NotFoundError("Target album not found");
-    }
+    if (!album) throw new NotFoundError("Target album not found");
 
-    if (!files || files.length === 0) {
-      throw new ValidationError("No files provided for upload");
-    }
-
-    if (files.length > MAX_FILES_PER_BATCH) {
+    if (!files || files.length === 0) throw new ValidationError("No files provided for upload");
+    if (files.length > MAX_FILES_PER_BATCH)
       throw new ValidationError(`Cannot upload more than ${MAX_FILES_PER_BATCH} files per request`);
+
+    // Validate personIds against DB
+    let validPersonIds: string[] = [];
+    if (personIds.length > 0) {
+      const existing = await prisma.person.findMany({
+        where: { id: { in: personIds } },
+        select: { id: true },
+      });
+      validPersonIds = existing.map((p) => p.id);
     }
 
     const uploaded: UploadSuccessItem[] = [];
     const failed: UploadFailedItem[] = [];
 
-    // 2. Process files sequentially to maintain safe concurrency
     for (const file of files) {
-      // Validate file format
       if (!ALLOWED_MIME_TYPES.includes(file.mimeType.toLowerCase())) {
-        failed.push({
-          filename: file.filename,
-          reason: "Unsupported file format. Allowed formats: JPG, PNG, WEBP",
-        });
+        failed.push({ filename: file.filename, reason: "Unsupported file format. Allowed: JPG, PNG, WEBP" });
         continue;
       }
-
-      // Validate file size
       if (file.size > MAX_FILE_SIZE) {
-        failed.push({
-          filename: file.filename,
-          reason: "File size exceeds 10MB limit",
-        });
+        failed.push({ filename: file.filename, reason: "File size exceeds 10MB limit" });
         continue;
       }
 
@@ -79,10 +74,8 @@ export class PhotoUploadService {
       let photoRecord: Photo | null = null;
 
       try {
-        // Upload to Cloudinary
         cloudResult = await CloudinaryStorage.uploadBuffer(file.buffer, albumId);
 
-        // Save Photo record in database
         photoRecord = await prisma.photo.create({
           data: {
             albumId,
@@ -96,26 +89,29 @@ export class PhotoUploadService {
           },
         });
 
+        // Tag people in join table
+        if (validPersonIds.length > 0) {
+          await prisma.photoPerson.createMany({
+            data: validPersonIds.map((personId) => ({ photoId: photoRecord!.id, personId })),
+            skipDuplicates: true,
+          });
+        }
+
         uploaded.push({
           photoId: photoRecord.id,
           filename: photoRecord.filename,
           imageUrl: photoRecord.imageUrl,
           thumbUrl: photoRecord.thumbUrl,
           albumId: photoRecord.albumId,
+          taggedPeople: validPersonIds,
         });
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : "Upload processing failed";
-
-        // Cleanup Cloudinary asset if DB insert failed after Cloudinary upload
         if (cloudResult && !photoRecord) {
-          console.warn(`⚠️ Cleaning up orphaned Cloudinary asset ${cloudResult.publicId} due to DB error...`);
+          console.warn(`⚠️ Cleaning up orphaned Cloudinary asset: ${cloudResult.publicId}`);
           await CloudinaryStorage.deleteImage(cloudResult.publicId);
         }
-
-        failed.push({
-          filename: file.filename,
-          reason: errorMsg,
-        });
+        failed.push({ filename: file.filename, reason: errorMsg });
       }
     }
 

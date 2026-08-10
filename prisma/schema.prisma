@@ -44,9 +44,9 @@ model Album {
 }
 
 model Photo {
-  id                 String   @id @default(cuid())
+  id                 String        @id @default(cuid())
   albumId            String
-  album              Album    @relation(fields: [albumId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  album              Album         @relation(fields: [albumId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   imageUrl           String
   thumbUrl           String?
   filename           String
@@ -56,8 +56,10 @@ model Photo {
   format             String?
   title              String?
   description        String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  people             PhotoPerson[]
 
   @@index([albumId])
   @@index([createdAt])
@@ -65,18 +67,30 @@ model Photo {
 }
 
 model Person {
-  id                 String   @id @default(cuid())
+  id                 String        @id @default(cuid())
   name               String
   role               String?
   bio                String?
   birthYear          Int?
   avatarUrl          String?
   cloudinaryPublicId String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  photos             PhotoPerson[]
 
   @@index([name])
   @@map("people")
+}
+
+model PhotoPerson {
+  photoId  String
+  personId String
+  photo    Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([photoId, personId])
+  @@map("photo_people")
 }
 
 

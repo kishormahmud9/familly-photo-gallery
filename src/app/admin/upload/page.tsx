@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Upload, X, Check, ArrowRight, FolderPlus, RefreshCw, AlertCircle } from 'lucide-react';
+import {
+  Upload, X, Check, ArrowRight, RefreshCw, AlertCircle, Users, UserCircle
+} from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 
@@ -23,49 +25,72 @@ interface AlbumOption {
   title: string;
 }
 
+interface PersonOption {
+  id: string;
+  name: string;
+  role?: string | null;
+  avatarUrl?: string | null;
+}
+
 export function UploadCenterPage() {
   const router = useRouter();
   const [dragActive, setDragActive] = useState(false);
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [albums, setAlbums] = useState<AlbumOption[]>([]);
+  const [people, setPeople] = useState<PersonOption[]>([]);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('');
+  const [selectedPersonIds, setSelectedPersonIds] = useState<Set<string>>(new Set());
   const [isUploading, setIsUploading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/albums', { cache: 'no-store' })
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((body) => {
         if (body.success && Array.isArray(body.data)) {
           setAlbums(body.data);
-          if (body.data.length > 0) {
-            setSelectedAlbumId(body.data[0].id);
-          }
+          if (body.data.length > 0) setSelectedAlbumId(body.data[0].id);
         }
       })
       .catch(() => setGlobalError('Failed to fetch albums'));
+
+    fetch('/api/people', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((body) => {
+        if (body.success && Array.isArray(body.data)) {
+          setPeople(body.data);
+        }
+      })
+      .catch(() => {}); // People is optional — don't block upload
   }, []);
 
+  const togglePerson = (id: string) => {
+    setSelectedPersonIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const processFiles = (files: FileList | File[]) => {
-    const validExtensions = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
     const newItems: QueuedFile[] = [];
 
-    Array.from(files).forEach((file, index) => {
-      const isTypeValid = validExtensions.includes(file.type.toLowerCase()) || file.name.match(/\.(jpg|jpeg|png|webp)$/i);
-      const isSizeValid = file.size <= 10 * 1024 * 1024; // 10MB max limit
-
+    Array.from(files).forEach((file, idx) => {
+      const typeOk = validTypes.includes(file.type.toLowerCase()) || /\.(jpg|jpeg|png|webp)$/i.test(file.name);
+      const sizeOk = file.size <= 10 * 1024 * 1024;
       const preview = URL.createObjectURL(file);
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
 
       newItems.push({
-        id: `upload-${Date.now()}-${index}-${Math.random()}`,
+        id: `upload-${Date.now()}-${idx}-${Math.random()}`,
         file,
         name: file.name,
         size: sizeMb,
         previewUrl: preview,
-        status: !isTypeValid ? 'error' : !isSizeValid ? 'error' : 'waiting',
-        errorMessage: !isTypeValid ? 'Unsupported format (Use JPG, PNG, WEBP)' : !isSizeValid ? 'Exceeds 10MB limit' : undefined,
+        status: !typeOk ? 'error' : !sizeOk ? 'error' : 'waiting',
+        errorMessage: !typeOk ? 'Unsupported format (use JPG, PNG, WEBP)' : !sizeOk ? 'Exceeds 10MB limit' : undefined,
       });
     });
 
@@ -86,34 +111,28 @@ export function UploadCenterPage() {
       return;
     }
 
-    const waitingFiles = queue.filter((item) => item.status === 'waiting');
+    const waitingFiles = queue.filter((i) => i.status === 'waiting');
     if (waitingFiles.length === 0) return;
 
     setIsUploading(true);
     setGlobalError(null);
 
-    // Mark as uploading
     setQueue((prev) =>
-      prev.map((item) => (item.status === 'waiting' ? { ...item, status: 'uploading' } : item))
+      prev.map((i) => (i.status === 'waiting' ? { ...i, status: 'uploading' } : i))
     );
 
     const formData = new FormData();
     formData.append('albumId', selectedAlbumId);
-    waitingFiles.forEach((item) => {
-      formData.append('files', item.file);
-    });
+    if (selectedPersonIds.size > 0) {
+      formData.append('personIds', JSON.stringify(Array.from(selectedPersonIds)));
+    }
+    waitingFiles.forEach((i) => formData.append('files', i.file));
 
     try {
-      const res = await fetch('/api/photos/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
+      const res = await fetch('/api/photos/upload', { method: 'POST', body: formData });
       const body = await res.json();
 
-      if (!res.ok || !body.success) {
-        throw new Error(body.message || 'Upload failed');
-      }
+      if (!res.ok || !body.success) throw new Error(body.message || 'Upload failed');
 
       const { uploaded, failed } = body.data as {
         uploaded: Array<{ photoId: string; filename: string }>;
@@ -125,29 +144,15 @@ export function UploadCenterPage() {
 
       setQueue((prev) =>
         prev.map((item) => {
-          if (uploadedMap.has(item.name)) {
-            return {
-              ...item,
-              status: 'completed',
-              uploadedPhotoId: uploadedMap.get(item.name),
-            };
-          }
-          if (failedMap.has(item.name)) {
-            return {
-              ...item,
-              status: 'error',
-              errorMessage: failedMap.get(item.name),
-            };
-          }
+          if (uploadedMap.has(item.name)) return { ...item, status: 'completed', uploadedPhotoId: uploadedMap.get(item.name) };
+          if (failedMap.has(item.name)) return { ...item, status: 'error', errorMessage: failedMap.get(item.name) };
           return item;
         })
       );
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to connect to upload service';
-      setGlobalError(errorMsg);
-      setQueue((prev) =>
-        prev.map((item) => (item.status === 'uploading' ? { ...item, status: 'error', errorMessage: errorMsg } : item))
-      );
+      const msg = err instanceof Error ? err.message : 'Failed to connect to upload service';
+      setGlobalError(msg);
+      setQueue((prev) => prev.map((i) => (i.status === 'uploading' ? { ...i, status: 'error', errorMessage: msg } : i)));
     } finally {
       setIsUploading(false);
     }
@@ -155,6 +160,7 @@ export function UploadCenterPage() {
 
   const completedCount = queue.filter((i) => i.status === 'completed').length;
   const waitingCount = queue.filter((i) => i.status === 'waiting').length;
+  const taggedCount = selectedPersonIds.size;
 
   return (
     <div className="space-y-8 pb-16">
@@ -172,7 +178,7 @@ export function UploadCenterPage() {
       )}
 
       {/* Target Album Selection */}
-      <div className="p-6 rounded-3xl bg-zinc-900 border border-white/10 space-y-4">
+      <div className="p-6 rounded-3xl bg-zinc-900 border border-white/10 space-y-3">
         <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400">
           Target Destination Album
         </label>
@@ -188,27 +194,82 @@ export function UploadCenterPage() {
             className="w-full max-w-md px-4 py-3 rounded-2xl bg-zinc-950 border border-white/15 text-sm text-zinc-100 focus:outline-none focus:border-amber-400/60 cursor-pointer disabled:opacity-50"
           >
             {albums.map((album) => (
-              <option key={album.id} value={album.id}>
-                {album.title}
-              </option>
+              <option key={album.id} value={album.id}>{album.title}</option>
             ))}
           </select>
         )}
       </div>
 
+      {/* People Tagger */}
+      {people.length > 0 && (
+        <div className="p-6 rounded-3xl bg-zinc-900 border border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-amber-400" />
+              <label className="text-xs font-mono uppercase tracking-wider text-zinc-400">
+                Tag Family Members in These Photos
+              </label>
+            </div>
+            {taggedCount > 0 && (
+              <span className="text-[11px] font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
+                {taggedCount} tagged
+              </span>
+            )}
+          </div>
+
+          <p className="text-[11px] text-zinc-500 font-sans">
+            Select family members who appear in the photos being uploaded. All photos in this batch will be tagged with the selected people.
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {people.map((person) => {
+              const selected = selectedPersonIds.has(person.id);
+              return (
+                <button
+                  key={person.id}
+                  type="button"
+                  onClick={() => !isUploading && togglePerson(person.id)}
+                  disabled={isUploading}
+                  className={`
+                    flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-sans transition-all cursor-pointer
+                    ${selected
+                      ? 'bg-amber-400/15 border-amber-400/50 text-amber-300'
+                      : 'bg-zinc-800 border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-300'
+                    }
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  `}
+                >
+                  <div className="w-6 h-6 rounded-full overflow-hidden border border-white/10 shrink-0 bg-zinc-700 flex items-center justify-center">
+                    {person.avatarUrl ? (
+                      <Image src={person.avatarUrl} alt={person.name} width={24} height={24} className="object-cover w-6 h-6" />
+                    ) : (
+                      <UserCircle className="w-4 h-4 text-zinc-500" />
+                    )}
+                  </div>
+                  <span>{person.name}</span>
+                  {person.role && (
+                    <span className="text-[10px] text-zinc-500 hidden sm:inline">{person.role}</span>
+                  )}
+                  {selected && <Check className="w-3 h-3 text-amber-400 ml-1" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {taggedCount === 0 && (
+            <p className="text-[11px] text-zinc-600 font-mono">No people tagged — photos will be uploaded without people associations.</p>
+          )}
+        </div>
+      )}
+
       {/* Drag & Drop Upload Zone */}
       <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragActive(true);
-        }}
+        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
         onDragLeave={() => setDragActive(false)}
         onDrop={(e) => {
           e.preventDefault();
           setDragActive(false);
-          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            processFiles(e.dataTransfer.files);
-          }
+          if (e.dataTransfer.files?.length > 0) processFiles(e.dataTransfer.files);
         }}
         onClick={() => fileInputRef.current?.click()}
         className={`border-2 border-dashed rounded-3xl p-10 text-center transition-all cursor-pointer ${
@@ -229,22 +290,23 @@ export function UploadCenterPage() {
           </div>
           <div>
             <h3 className="text-xl font-serif font-bold text-white">Drop photographs here</h3>
-            <p className="text-xs font-sans text-zinc-400 mt-1">
-              Supports JPG, PNG, and WEBP up to 10MB per file
-            </p>
+            <p className="text-xs font-sans text-zinc-400 mt-1">Supports JPG, PNG, and WEBP up to 10MB per file</p>
           </div>
-          <Button variant="secondary" size="md">
-            Browse Files from Device
-          </Button>
+          <Button variant="secondary" size="md">Browse Files from Device</Button>
         </div>
       </div>
 
-      {/* Queue Listing */}
+      {/* Queue */}
       {queue.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-serif font-bold text-white">
-              Upload Processing Queue ({queue.length})
+              Upload Queue ({queue.length})
+              {taggedCount > 0 && (
+                <span className="ml-2 text-xs font-sans font-normal text-amber-400">
+                  · {taggedCount} {taggedCount === 1 ? 'person' : 'people'} will be tagged
+                </span>
+              )}
             </h3>
             <div className="flex items-center gap-3">
               {waitingCount > 0 && (
@@ -255,7 +317,7 @@ export function UploadCenterPage() {
                   icon={isUploading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                   onClick={handleUploadAll}
                 >
-                  {isUploading ? 'Uploading to Cloudinary...' : `Upload ${waitingCount} Files to Cloudinary`}
+                  {isUploading ? 'Uploading...' : `Upload ${waitingCount} Files`}
                 </Button>
               )}
               {completedCount > 0 && (
@@ -265,7 +327,7 @@ export function UploadCenterPage() {
                   icon={<ArrowRight className="w-4 h-4" />}
                   onClick={() => router.push('/admin/photos')}
                 >
-                  Go to Photos Library ({completedCount})
+                  Go to Photos ({completedCount})
                 </Button>
               )}
             </div>
@@ -290,7 +352,7 @@ export function UploadCenterPage() {
                 <div className="flex items-center gap-4">
                   {item.status === 'completed' ? (
                     <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
-                      <Check className="w-4 h-4" /> Uploaded to Cloudinary
+                      <Check className="w-4 h-4" /> Uploaded
                     </span>
                   ) : item.status === 'error' ? (
                     <span className="text-rose-400 font-medium">{item.errorMessage}</span>
@@ -299,15 +361,12 @@ export function UploadCenterPage() {
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Uploading...
                     </span>
                   ) : (
-                    <span className="text-zinc-400">Waiting for upload</span>
+                    <span className="text-zinc-400">Waiting</span>
                   )}
 
                   {!isUploading && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFile(item.id);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); handleRemoveFile(item.id); }}
                       className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
                     >
                       <X className="w-4 h-4" />

@@ -18,6 +18,18 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("albumId field is required");
     }
 
+    // Parse optional personIds — sent as a JSON array string or multiple form fields
+    let personIds: string[] = [];
+    const personIdsRaw = formData.get("personIds");
+    if (personIdsRaw && typeof personIdsRaw === "string") {
+      try {
+        const parsed = JSON.parse(personIdsRaw);
+        if (Array.isArray(parsed)) personIds = parsed.filter((id) => typeof id === "string");
+      } catch {
+        // Not JSON — ignore
+      }
+    }
+
     const rawFiles = formData.getAll("files");
     if (!rawFiles || rawFiles.length === 0) {
       throw new ValidationError("No files attached in form data");
@@ -44,7 +56,7 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("No valid file objects received");
     }
 
-    const result = await PhotoUploadService.uploadPhotosForAlbum(albumId, filesToUpload);
+    const result = await PhotoUploadService.uploadPhotosForAlbum(albumId, filesToUpload, personIds);
     return successResponse(result, "Upload processing completed");
   } catch (error) {
     return handleApiError(error);
