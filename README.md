@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Family Photo Gallery
 
-## Getting Started
+A private family photo management and gallery platform built with Next.js 16 App Router, TypeScript, Prisma ORM, and Neon PostgreSQL.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🛠️ Technology Stack
+
+- **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, Framer Motion, Lucide Icons.
+- **Backend & Database**: Next.js Route Handlers, TypeScript, Prisma ORM 7, Neon PostgreSQL.
+- **Validation & Safety**: Zod schema validation, `@prisma/adapter-pg`, `server-only` guards.
+
+---
+
+## 🏗️ Architecture & Database Design
+
+### System Overview
+```
+Client (App Router Pages)
+        ↓
+Next.js Route Handlers (/api/*)
+        ↓
+Validation Layer (Zod Schemas & Primitives)
+        ↓
+Service Layer (Business Logic)
+        ↓
+Repository / Data Access Layer
+        ↓
+Prisma Client (Singleton & PG Adapter)
+        ↓
+Neon PostgreSQL Database
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Entity Relationship Model
+```
+┌──────────────┐
+│    Admin     │ (System Administrator Account)
+├──────────────┤
+│ id (cuid)    │
+│ email (UQ)   │
+│ password     │
+│ name         │
+│ role         │
+└──────────────┘
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+┌──────────────┐             ┌──────────────┐
+│    Album     │ 1         * │    Photo     │
+├──────────────┼────────────<├──────────────┤
+│ id (cuid)    │             │ id (cuid)    │
+│ title        │             │ albumId (FK) │
+│ description  │             │ imageUrl     │
+│ coverUrl     │             │ thumbUrl     │
+│ eventDate    │             │ filename     │
+│ createdAt    │             │ title        │
+│ updatedAt    │             │ description  │
+└──────────────┘             │ createdAt    │
+                             │ updatedAt    │
+                             └──────────────┘
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Storage Separation**: PostgreSQL stores photo metadata and relational links. Binary image assets are hosted externally.
+- **Safe Relational Integrity**: Photo records belong strictly to an `Album` (`onDelete: Restrict`). Album deletion is guarded to prevent accidental loss of associated photos.
+- **CUID Primary Keys**: Collision-resistant, URL-safe cuid keys across all models (`Admin`, `Album`, `Photo`).
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 🚀 Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Prerequisites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Node.js**: v20 or later
+- **Package Manager**: `npm`
+- **Database**: Neon PostgreSQL connection URL
 
-## Deploy on Vercel
+### 1. Environment Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Configure your Neon PostgreSQL connection string in `.env`:
+   ```env
+   DATABASE_URL="postgresql://<user>:<password>@<neon-hostname>/<dbname>?sslmode=require"
+   ```
+3. (Optional) Set seed credentials for initial admin setup:
+   ```env
+   ADMIN_EMAIL="admin@familyphoto.local"
+   ADMIN_PASSWORD="your-secure-password"
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 2. Database Migration & Client Generation
+
+Run the Prisma migration to synchronize your Neon database schema:
+```bash
+npx prisma migrate dev
+```
+
+Generate the Prisma Client:
+```bash
+npx prisma generate
+```
+
+### 3. Database Seeding
+
+To create or verify the initial admin account (using credentials from `.env`):
+```bash
+npx prisma db seed
+```
+*Note: The seed script uses `bcryptjs` password hashing and is completely idempotent (safe to run multiple times without duplicating records).*
+
+### 4. Running the Application
+
+Start the local development server:
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 🔒 Security & Best Practices
+
+- **Zero Plaintext Passwords**: Admin passwords are strictly hashed using `bcrypt` (12 rounds) before database storage.
+- **Server/Client Isolation**: Database connection logic and Prisma instances are isolated from client components using `import "server-only"`.
+- **Environment Protection**: Sensitive keys (`DATABASE_URL`, `ADMIN_PASSWORD`) are server-only and excluded from version control via `.gitignore`.
+
+---
+
+## 📌 Phase Status
+
+- [x] **Phase 1**: Backend Foundation & Shared Architecture
+- [x] **Phase 2**: Database Architecture, Prisma Schema & Neon PostgreSQL
+- [ ] **Phase 3**: Authentication & Authorization (Next Phase)
+- [ ] **Phase 4**: Photo Upload & Storage Integration
+- [ ] **Phase 5**: Album & Photo Management APIs
+- [ ] **Phase 6**: Public & Admin Frontend Integration
