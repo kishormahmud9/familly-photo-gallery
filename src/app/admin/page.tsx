@@ -12,8 +12,18 @@ export default function AdminOverviewPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [albums, setAlbums] = useState<Album[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
+  const [realStats, setRealStats] = useState<{ totalAlbums: number; totalPhotos: number } | null>(null);
 
   useEffect(() => {
+    fetch('/api/admin/dashboard', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((body) => {
+        if (body.success && body.data?.stats) {
+          setRealStats(body.data.stats);
+        }
+      })
+      .catch(() => {});
+
     Promise.all([
       PhotoService.getPhotos(),
       PhotoService.getAlbums(),
@@ -26,10 +36,10 @@ export default function AdminOverviewPage() {
   }, []);
 
   const stats = [
-    { label: 'Total Photographs', value: photos.length, icon: <ImageIcon className="w-5 h-5 text-amber-400" /> },
-    { label: 'Albums', value: albums.length, icon: <FolderOpen className="w-5 h-5 text-amber-400" /> },
+    { label: 'Total Photographs', value: realStats ? realStats.totalPhotos : photos.length, icon: <ImageIcon className="w-5 h-5 text-amber-400" /> },
+    { label: 'Albums', value: realStats ? realStats.totalAlbums : albums.length, icon: <FolderOpen className="w-5 h-5 text-amber-400" /> },
     { label: 'Family Members', value: people.length, icon: <Users className="w-5 h-5 text-amber-400" /> },
-    { label: 'Storage Used', value: '4.2 GB / 50 GB', icon: <HardDrive className="w-5 h-5 text-amber-400" /> },
+    { label: 'Cloud Storage', value: 'Cloudinary Active', icon: <HardDrive className="w-5 h-5 text-amber-400" /> },
   ];
 
   return (
