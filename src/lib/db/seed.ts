@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import bcrypt from "bcryptjs";
+import argon2 from "argon2";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -15,19 +15,16 @@ export async function seedAdmin() {
   }
 
   try {
-    const existingAdmin = await prisma.admin.findUnique({
-      where: { email },
+    const hashedPassword = await argon2.hash(rawPassword, {
+      type: argon2.argon2id,
     });
 
-    if (existingAdmin) {
-      console.log(`ℹ️ Admin user with email "${email}" already exists. Seed skipped.`);
-      return;
-    }
-
-    const hashedPassword = await bcrypt.hash(rawPassword, 12);
-
-    const admin = await prisma.admin.create({
-      data: {
+    const admin = await prisma.admin.upsert({
+      where: { email },
+      update: {
+        password: hashedPassword,
+      },
+      create: {
         email,
         password: hashedPassword,
         name: "Gallery Admin",
@@ -35,7 +32,7 @@ export async function seedAdmin() {
       },
     });
 
-    console.log(`✅ Initial admin created successfully for: ${admin.email}`);
+    console.log(`✅ Admin account configured/reseeded successfully for: ${admin.email} (Argon2id)`);
   } catch (error) {
     console.error("❌ Failed to seed initial admin user:", error);
     throw error;

@@ -5,6 +5,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.string().optional(),
+  AUTH_SECRET: z.string().default("default-dev-secret-family-photo-gallery-auth-2026-key"),
 });
 
 function parseEnv() {

@@ -120,9 +120,19 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🔒 Security & Best Practices
 
-- **Zero Plaintext Passwords**: Admin passwords are strictly hashed using `bcrypt` (12 rounds) before database storage.
+- **Argon2id Hashing**: Admin passwords are strictly hashed using `Argon2id` before database storage.
+- **HTTP-Only Cookies & JWT**: Sessions are managed with signed JWT tokens inside HTTP-only, secure, SameSite cookies.
 - **Server/Client Isolation**: Database connection logic and Prisma instances are isolated from client components using `import "server-only"`.
-- **Environment Protection**: Sensitive keys (`DATABASE_URL`, `ADMIN_PASSWORD`) are server-only and excluded from version control via `.gitignore`.
+- **Environment Protection**: Sensitive keys (`DATABASE_URL`, `ADMIN_PASSWORD`, `AUTH_SECRET`) are server-only and excluded from version control via `.gitignore`.
+
+---
+
+## 🔑 Authentication APIs
+
+- `POST /api/auth/login`: Admin authentication endpoint.
+- `GET /api/auth/me`: Returns current authenticated admin session.
+- `POST /api/auth/logout`: Invalidates session and clears HTTP-only cookie.
+- `POST /api/auth/change-password`: Protected password update endpoint (Argon2id).
 
 ---
 
@@ -130,7 +140,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 - [x] **Phase 1**: Backend Foundation & Shared Architecture
 - [x] **Phase 2**: Database Architecture, Prisma Schema & Neon PostgreSQL
-- [ ] **Phase 3**: Authentication & Authorization (Next Phase)
-- [ ] **Phase 4**: Photo Upload & Storage Integration
+- [x] **Phase 3**: Admin Authentication & Security
+- [ ] **Phase 4**: Photo Upload & Storage Integration (Next Phase)
 - [ ] **Phase 5**: Album & Photo Management APIs
 - [ ] **Phase 6**: Public & Admin Frontend Integration
