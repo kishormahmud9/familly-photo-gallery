@@ -146,11 +146,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## ☁️ Photo Upload & Storage APIs
+
+- `POST /api/photos/upload`: Multipart image upload endpoint (Admin Only). Uploads validated binary images to Cloudinary (`family-photo-gallery/{env}/albums/{albumId}/photos`) and persists photo metadata & transformation URLs to Neon PostgreSQL.
+
+---
+
 ## 📌 Phase Status
 
 - [x] **Phase 1**: Backend Foundation & Shared Architecture
 - [x] **Phase 2**: Database Architecture, Prisma Schema & Neon PostgreSQL
 - [x] **Phase 3**: Admin Authentication & Security
 - [x] **Phase 4**: Album Management & Project Git Hygiene
-- [ ] **Phase 5**: Photo Upload & Storage Integration (Next Phase)
-- [ ] **Phase 6**: Public & Admin Frontend Integration
+- [x] **Phase 5**: Photo Upload & Storage Integration (Cloudinary)
+- [ ] **Phase 6**: Public & Admin Frontend Integration (Next Phase)
