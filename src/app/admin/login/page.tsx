@@ -64,10 +64,10 @@ function AdminLoginForm() {
   useEffect(() => {
     fetch('/api/auth/me', { cache: 'no-store' })
       .then((res) => {
-        if (res.ok) router.replace('/admin');
+        if (res.ok) window.location.href = '/admin';
       })
       .catch(() => {});
-  }, [router]);
+  }, []);
 
   // Handle Login Submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,13 +95,15 @@ function AdminLoginForm() {
         return;
       }
 
-      router.replace(redirectTo);
+      // Hard redirect so HTTP-only auth cookie triggers fresh server page load
+      window.location.href = redirectTo;
     } catch {
       setError('Unable to connect. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   // Open Forgot Modal
   const handleOpenForgotModal = () => {
