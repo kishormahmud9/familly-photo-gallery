@@ -1,5 +1,6 @@
 import "server-only";
 import nodemailer from "nodemailer";
+import { AppError } from "../errors/app-error";
 
 export async function sendOtpEmail(toEmail: string, otp: string): Promise<boolean> {
   const host = process.env.SMTP_HOST;
@@ -8,7 +9,7 @@ export async function sendOtpEmail(toEmail: string, otp: string): Promise<boolea
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM || `"Family Photo Gallery" <${user || "noreply@gallery.com"}>`;
 
-  // Fallback log for development mode if SMTP is not fully configured
+  // Fallback log if SMTP is not fully configured
   if (!host || !user || !pass || user === "your-email@gmail.com") {
     console.warn("\n==================================================");
     console.warn("⚠️ [SMTP CONFIG MISSING] Email sending bypassed!");
@@ -72,6 +73,7 @@ export async function sendOtpEmail(toEmail: string, otp: string): Promise<boolea
     return true;
   } catch (error) {
     console.error("❌ Failed to send OTP email via SMTP:", error);
-    throw new Error("Failed to send OTP email. Please verify SMTP configuration.");
+    throw new AppError("Failed to send OTP email. Please verify Vercel SMTP environment variables.", 500, true);
   }
 }
+
