@@ -93,4 +93,16 @@ model PhotoPerson {
   @@map("photo_people")
 }
 
+model PasswordResetOTP {
+  id        String   @id @default(cuid())
+  email     String
+  otpHash   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@map("password_reset_otps")
+}
+
+
 

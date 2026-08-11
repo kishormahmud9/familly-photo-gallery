@@ -25,3 +25,32 @@ export const changePasswordSchema = z
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const requestOtpSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+});
+
+export const verifyOtpSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be exactly 6 digits").regex(/^\d+$/, "OTP must contain only numbers"),
+});
+
+export const resetPasswordWithOtpSchema = z
+  .object({
+    email: z.string().trim().email("Invalid email address"),
+    otp: z.string().length(6, "OTP must be exactly 6 digits").regex(/^\d+$/, "OTP must contain only numbers"),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters long")
+      .max(100, "New password is too long"),
+    confirmPassword: z.string().min(1, "Password confirmation is required"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New password and confirmation do not match",
+    path: ["confirmPassword"],
+  });
+
+export type RequestOtpInput = z.infer<typeof requestOtpSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type ResetPasswordWithOtpInput = z.infer<typeof resetPasswordWithOtpSchema>;
+
