@@ -9,7 +9,7 @@ import { PhotoService } from '@/services/photoService';
 import { Photo, Album, Person } from '@/types';
 import { GalleryRenderer } from '@/components/gallery/GalleryRenderer';
 import { Button } from '@/components/ui/Button';
-const heroBg = '/hero/hero-bg.jpg';
+const heroBg = '/hero/hero-bg.png';
 
 export default function HomePage() {
   const [featuredPhotos, setFeaturedPhotos] = useState<Photo[]>([]);
@@ -36,58 +36,58 @@ export default function HomePage() {
       {/* 1. Cinematic Hero Section */}
       <section className="relative w-full h-[80vh] min-h-[550px] max-h-[800px] rounded-3xl overflow-hidden border border-white/10 group shadow-2xl">
         <Image
-          src="/hero/hero-bg.jpg"
+          src="/hero/hero-bg.png"
           alt="Family Archive Hero"
           fill
           priority
           sizes="(max-width: 1200px) 100vw, 1400px"
           className="object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
         />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent flex flex-col justify-end p-8 md:p-14">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-2xl space-y-4"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono uppercase tracking-widest text-amber-400">
-                  THE FAMILY ARCHIVE
-                </span>
-                <span className="font-signature text-amber-300 text-lg">captured with love</span>
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-white tracking-tight leading-tight">
-                Moments we remember.
-              </h1>
-              <p className="text-zinc-300 text-sm md:text-base font-sans font-light leading-relaxed max-w-xl">
-                {'A timeless collection of family stories, milestones, and memories spanning generations.'}
-              </p>
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent flex flex-col justify-end p-8 md:p-14">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-2xl space-y-4"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono uppercase tracking-widest text-amber-400">
+                THE FAMILY ARCHIVE
+              </span>
+              <span className="font-signature text-amber-300 text-lg">captured with love</span>
+            </div>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-white tracking-tight leading-tight">
+              Moments we remember.
+            </h1>
+            <p className="text-zinc-300 text-sm md:text-base font-sans font-light leading-relaxed max-w-xl">
+              {'A timeless collection of family stories, milestones, and memories spanning generations.'}
+            </p>
 
-              {/* Hero Archival Metadata */}
-              <div className="flex items-center gap-4 text-xs font-sans text-zinc-400 pt-1">
-                <span>Bangladesh</span>
-                <span>•</span>
-                <span>2024</span>
-                <span>•</span>
-                <span>{featuredPhotos.length} curated highlights</span>
-              </div>
+            {/* Hero Archival Metadata */}
+            <div className="flex items-center gap-4 text-xs font-sans text-zinc-400 pt-1">
+              <span>Bangladesh</span>
+              <span>•</span>
+              <span>2024</span>
+              <span>•</span>
+              <span>{featuredPhotos.length} curated highlights</span>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="pt-4 flex flex-wrap items-center gap-4">
-                <Link href="/photos">
-                  <Button variant="primary" size="lg" icon={<ArrowRight className="w-4 h-4" />}>
-                    Explore Memories
-                  </Button>
-                </Link>
-                <Link href="/albums">
-                  <Button variant="outline" size="lg">
-                    View Albums
-                  </Button>
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </section>
+            {/* Action Buttons */}
+            <div className="pt-4 flex flex-wrap items-center gap-4">
+              <Link href="/photos">
+                <Button variant="primary" size="lg" icon={<ArrowRight className="w-4 h-4" />}>
+                  Explore Memories
+                </Button>
+              </Link>
+              <Link href="/albums">
+                <Button variant="outline" size="lg">
+                  View Albums
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
 
       {/* 2. Editorial Quote Statement */}
